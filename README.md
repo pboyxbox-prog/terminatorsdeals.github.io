@@ -1,4 +1,4 @@
-terminatorsdeals.github.io
+
 import React, { useMemo, useState } from "react";
 import { Hammer, Truck, Boxes, DollarSign, BadgeCheck, PackageSearch, MapPin, Phone, Mail, CalendarCheck, MessageSquare, ShoppingCart, ArrowRight, Facebook, Store, Shield, Clock, Sparkles, Building2, Zap, ChevronDown, ChevronUp } from "lucide-react";
 
