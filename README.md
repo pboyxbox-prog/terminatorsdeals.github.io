@@ -1,14 +1,150 @@
+# Create a GitHub-ready Vite + React + Tailwind project and zip it
+import os, shutil, textwrap, json, zipfile, pathlib
+
+project = "/mnt/data/warehouse-terminators-site"
+if os.path.exists(project):
+    shutil.rmtree(project)
+os.makedirs(project, exist_ok=True)
+
+# Directory structure
+dirs = [
+    "public",
+    "src/assets",
+    "src",
+    ".github/workflows"
+]
+for d in dirs:
+    os.makedirs(os.path.join(project, d), exist_ok=True)
+
+# Copy provided images (if they exist)
+for fname in ["photo_2025-09-21_18-28-32.jpg", "photo_2025-09-21_18-28-33.jpg"]:
+    src = f"/mnt/data/{fname}"
+    dst = os.path.join(project, "src/assets", fname)
+    if os.path.exists(src):
+        shutil.copy(src, dst)
+
+# package.json
+package_json = {
+  "name": "warehouse-terminators",
+  "private": True,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "vite": "^5.4.0"
+  }
+}
+with open(os.path.join(project, "package.json"), "w") as f:
+    json.dump(package_json, f, indent=2)
+
+# vite.config.js (set base to './' for GitHub Pages subpath)
+vite_config = """\
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  base: './' // works on GitHub Pages subpaths
+})
+"""
+# Need to include @vitejs/plugin-react dependency
+package_json["devDependencies"]["@vitejs/plugin-react"] = "^4.3.1"
+with open(os.path.join(project, "package.json"), "w") as f:
+    json.dump(package_json, f, indent=2)
+with open(os.path.join(project, "vite.config.js"), "w") as f:
+    f.write(vite_config)
+
+# Tailwind and PostCSS
+tailwind_config = """\
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  theme: { extend: {} },
+  plugins: [],
+}
+"""
+with open(os.path.join(project, "tailwind.config.js"), "w") as f:
+    f.write(tailwind_config)
+
+postcss_config = """\
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+"""
+with open(os.path.join(project, "postcss.config.js"), "w") as f:
+    f.write(postcss_config)
+
+# index.html
+index_html = """\
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Warehouse Terminators — Liquidation Sales</title>
+    <meta name="description" content="Liquidation deals in neon — electronics, home goods & more at retro prices. GTA pickup & delivery." />
+    <meta property="og:title" content="Warehouse Terminators — Liquidation Sales" />
+    <meta property="og:description" content="Liquidation deals in neon — electronics, home goods & more at retro prices. GTA pickup & delivery." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="%VITE_BASE_URL%assets/og.jpg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+"""
+with open(os.path.join(project, "index.html"), "w") as f:
+    f.write(index_html)
+
+# src/main.jsx
+main_jsx = """\
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
+"""
+with open(os.path.join(project, "src/main.jsx"), "w") as f:
+    f.write(main_jsx)
+
+# src/index.css
+index_css = """\
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; background: #0a0a0a; }
+"""
+with open(os.path.join(project, "src/index.css"), "w") as f:
+    f.write(index_css)
+
+# src/App.jsx (full component with imports from src/assets)
+app_jsx = r"""\
 import React, { useMemo, useState } from "react";
 import { Hammer, Truck, Boxes, DollarSign, BadgeCheck, PackageSearch, MapPin, Phone, Mail, CalendarCheck, MessageSquare, ShoppingCart, ArrowRight, Facebook, Store, Shield, Clock, Sparkles, Building2, Zap, ChevronDown, ChevronUp } from "lucide-react";
 
-// Image assets — place these files next to this component or replace with public URLs
-const ART_URL = "photo_2025-09-21_18-28-32.jpg"; // primary
-const ART_FALLBACK_URL = "photo_2025-09-21_18-28-33.jpg"; // fallback
-
-// ==============================
-// Warehouse Terminators — Liquidation Sales (Synthwave / New‑Retro‑Wave)
-// Single‑file React component using TailwindCSS
-// ==============================
+import ART_URL from "./assets/photo_2025-09-21_18-28-32.jpg";
+import ART_FALLBACK_URL from "./assets/photo_2025-09-21_18-28-33.jpg";
 
 const Container = ({ children, className = "" }) => (
   <div className={`mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 ${className}`}>{children}</div>
@@ -53,7 +189,7 @@ const Section = ({ id, eyebrow, title, subtitle, children, className = "" }) => 
   </section>
 );
 
-// === NEON CN TOWER SKYLINE (SVG Backdrop) ===
+// Neon CN Tower Skyline Backdrop (SVG)
 const NeonSkyline = () => (
   <div className="pointer-events-none absolute inset-x-0 top-24 z-0 select-none opacity-30">
     <svg viewBox="0 0 1200 220" className="mx-auto h-40 w-[92%]">
@@ -69,13 +205,10 @@ const NeonSkyline = () => (
         </filter>
       </defs>
       <g stroke="url(#g)" strokeWidth="2" fill="none" filter="url(#glow)">
-        {/* simple skyline */}
         <path d="M50 200 L50 140 L80 140 L80 200 M120 200 L120 120 L140 120 L140 200 M200 200 L200 90 L210 90 L210 200 M260 200 L260 110 L280 110 L280 200"/>
-        {/* CN Tower */}
         <path d="M600 200 L600 70 M600 70 L600 40"/>
         <circle cx="600" cy="65" r="30"/>
         <path d="M590 90 L610 90 L610 200 L590 200 Z"/>
-        {/* more buildings */}
         <path d="M700 200 L700 100 L740 100 L740 200 M780 200 L780 120 L820 120 L820 200 M860 200 L860 140 L880 140 L880 200"/>
       </g>
     </svg>
@@ -92,7 +225,7 @@ const ReviewsBadge = () => (
   </div>
 );
 
-// === NAV ===
+// NAV
 const Nav = () => {
   const [open, setOpen] = useState(false);
   const items = [
@@ -107,7 +240,6 @@ const Nav = () => {
     <div className="sticky top-0 z-40 w-full border-b border-white/10 bg-gray-950/75 backdrop-blur supports-[backdrop-filter]:bg-gray-950/55">
       <Container className="flex items-center justify-between py-3">
         <a href="#top" className="relative flex items-center gap-3">
-          {/* Logo in the corner */}
           <img src={ART_URL} onError={(e)=>{ e.currentTarget.src = ART_FALLBACK_URL; }} alt="Warehouse Terminators Logo" className="h-10 w-10 rounded-lg object-cover shadow-[0_0_18px_rgba(236,72,153,0.6)]" />
           <div className="leading-tight">
             <div className="font-black tracking-tight text-white">Warehouse Terminators</div>
@@ -142,11 +274,10 @@ const Nav = () => {
   );
 };
 
-// === HERO ===
+// HERO
 const Hero = () => (
   <section id="top" className="relative overflow-hidden">
     <div className="absolute inset-0">
-      {/* Dark neon gradient + scanline grid */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-900" />
       <div
         className="absolute inset-0 opacity-40"
@@ -156,11 +287,9 @@ const Hero = () => (
           backgroundSize: "36px 36px",
         }}
       />
-      {/* Glow blobs */}
       <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-fuchsia-600 opacity-40 blur-3xl" />
       <div className="absolute -right-24 -bottom-24 h-96 w-96 rounded-full bg-cyan-500 opacity-40 blur-3xl" />
     </div>
-    {/* Artwork watermark top-left */}
     <img
       src={ART_URL}
       alt="Warehouse Terminators — Synthwave artwork"
@@ -217,7 +346,7 @@ const Hero = () => (
   </section>
 );
 
-// === INVENTORY ===
+// Inventory
 const initialItems = [
   { id: 1, name: "Dyson V15 Detect", tag: "Vacuums", price: 499, status: "Tested • Ready", desc: "Lightly used • accessories included" },
   { id: 2, name: "PlayStation 5 (Disc)", tag: "Gaming", price: 549, status: "Refurb • Warranty", desc: "Cleaned • re‑pasted • filters" },
@@ -309,7 +438,7 @@ const Inventory = () => {
   );
 };
 
-// === SERVICES ===
+// Services
 const Services = () => (
   <Section
     id="services"
@@ -342,7 +471,7 @@ const Services = () => (
   </Section>
 );
 
-// === HOW IT WORKS ===
+// How It Works
 const HowItWorks = () => (
   <Section id="how" eyebrow="Fast & Simple" title="How it works" subtitle="Pick what you like, message us, and choose pickup or delivery. Liquidation made easy.">
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -371,7 +500,7 @@ const HowItWorks = () => (
   </Section>
 );
 
-// === AUCTIONS ===
+// Auctions
 const Auctions = () => (
   <Section id="auctions" eyebrow="HiBid & More" title="Join our online auctions" subtitle="Score deals on mixed lots and single items. Clear photos, honest descriptions, scheduled pickups.">
     <div className="grid items-stretch gap-6 lg:grid-cols-2">
@@ -411,7 +540,7 @@ const Auctions = () => (
   </Section>
 );
 
-// === GRADING GUIDE ===
+// Grading
 const GradingGuide = () => (
   <Section id="grading" eyebrow="Know your grade" title="Transparent grading & warranty" subtitle="Exactly what you’re getting—no surprises.">
     <div className="grid gap-6 md:grid-cols-2">
@@ -435,7 +564,7 @@ const GradingGuide = () => (
   </Section>
 );
 
-// === TESTIMONIALS ===
+// Testimonials
 const Testimonials = () => (
   <Section id="testimonials" eyebrow="Happy buyers" title="Real reviews from the community" subtitle="We thrive on repeat customers and referrals.">
     <div className="grid gap-6 lg:grid-cols-3">
@@ -449,7 +578,7 @@ const Testimonials = () => (
   </Section>
 );
 
-// === SERVICE AREAS ===
+// Service Areas
 const ServiceAreas = () => (
   <Section id="service" eyebrow="GTA & beyond" title="Pickup location & delivery zones" subtitle="Flat, transparent fees. Ask for quotes outside the GTA.">
     <div className="rounded-3xl border border-white/20 bg-white/5 p-6 text-white backdrop-blur">
@@ -475,7 +604,7 @@ const ServiceAreas = () => (
   </Section>
 );
 
-// === FAQ ===
+// FAQ
 const faqs = [
   { q: "Do you test items?", a: "Yes. Most items are inspected and tested. We describe issues and grade honestly (A/B/C, Open Box, Refurb)." },
   { q: "Where are you located?", a: "126A Oakdale Rd, North York, ON M3N 1V9. Evening deliveries available within the GTA." },
@@ -502,7 +631,7 @@ const FAQ = () => {
   );
 };
 
-// === CONTACT ===
+// Contact
 const Contact = () => (
   <Section id="contact" eyebrow="Get in touch" title="Contact sales" subtitle="Tell us what you’re looking for. We reply fast during business hours.">
     <div className="grid items-start gap-8 lg:grid-cols-3">
@@ -535,7 +664,7 @@ const Contact = () => (
       <aside className="rounded-3xl border border-white/15 bg-white/5 p-6 text-white shadow-[0_0_22px_rgba(255,255,255,0.06)]">
         <h3 className="font-bold">Direct contacts</h3>
         <ul className="mt-3 space-y-2 text-sm text-white/80">
-          <li className="flex items-center gap-2"><Phone className="h-4 w-4"/> <a href="tel:+14373333316">+1 437 333 3316</a></li>
+          <li className="flex items-center gap-2"><Phone className="h-4 w-4"/><a href="tel:+14373333316">+1 437 333 3316</a></li>
           <li className="flex items-center gap-2"><MapPin className="h-4 w-4"/> 126A Oakdale Rd, North York, ON M3N 1V9</li>
           <li className="flex items-center gap-2"><Clock className="h-4 w-4"/> Mon–Sat 12–7 PM • Delivery 7–10 PM</li>
         </ul>
@@ -550,7 +679,7 @@ const Contact = () => (
   </Section>
 );
 
-// === FOOTER ===
+// Footer + JSON-LD
 const Footer = () => (
   <footer className="border-t border-white/10 bg-gray-950 py-10 text-white">
     <Container className="flex flex-col items-center justify-between gap-4 text-center text-sm text-white/80 md:flex-row md:text-left">
@@ -563,7 +692,6 @@ const Footer = () => (
   </footer>
 );
 
-// === JSON‑LD ===
 const LocalBusinessJsonLd = () => (
   <script
     type="application/ld+json"
@@ -573,7 +701,7 @@ const LocalBusinessJsonLd = () => (
         "@type": "Store",
         name: "Warehouse Terminators",
         slogan: "Shop with us if you wanna live",
-        url: "https://warehouseterminators.example",
+        url: "https://example.com",
         areaServed: "Canada",
         address: { "@type": "PostalAddress", streetAddress: "126A Oakdale Rd", addressLocality: "North York", addressRegion: "ON", postalCode: "M3N 1V9", addressCountry: "CA" },
         openingHours: ["Mo-Sa 12:00-19:00"],
@@ -588,8 +716,7 @@ const LocalBusinessJsonLd = () => (
   />
 );
 
-// === PAGE ===
-export default function WarehouseTerminatorsSynthwave() {
+export default function App() {
   return (
     <main
       className="relative min-h-screen text-white"
@@ -614,3 +741,62 @@ export default function WarehouseTerminatorsSynthwave() {
     </main>
   );
 }
+"""
+with open(os.path.join(project, "src/App.jsx"), "w") as f:
+    f.write(app_jsx)
+
+# GitHub Actions workflow for Pages
+workflow_yml = """\
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+"""
+with open(os.path.join(project, ".github/workflows/deploy.yml"), "w") as f:
+    f.write(workflow_yml)
+
+# README.md
+readme = """\
+# Warehouse Terminators — Synthwave Website
+
+Liquidation sales site with neon CN Tower backdrop, inventory grid, auctions, and contact info.
+
+## Local Dev
+```bash
+npm install
+npm run dev
